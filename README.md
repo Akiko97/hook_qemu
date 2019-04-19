@@ -19,7 +19,7 @@ sudo ./load_mod.sh
 ***NEED CUBE-TCM SUPPORT!***
 
 build cube-tcm environment => [here](<https://github.com/Akiko97/auto-vtcm>)
-### Run QEMU
+## Run QEMU
 ```shell
 sudo qemu-system-x86_64 -m 1024 -smp 4 -hda ./ubuntu.img
 ```
