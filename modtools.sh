@@ -1,7 +1,7 @@
 #!/bin/sh
-if [ -n $1 ]
+if [ -n "$1" ]
 then
-	case $1 in
+	case "$1" in
 		load)
 			cpstings_address=`grep copy_strings.isra /proc/kallsyms | awk {'print $1'}`
 			/sbin/insmod ./hook_qemu_mod.ko hook_address=0x$cpstings_address
