@@ -12,8 +12,15 @@ make
 load:
 
 ```shell
-sudo chmod 777 ./load_mod.sh
-sudo ./load_mod.sh
+sudo chmod 777 ./modtools.sh
+sudo ./modtools.sh load
+```
+
+remove:
+
+```shell
+sudo chmod 777 ./modtools.sh
+sudo ./modtools.sh remove
 ```
 
 ***NEED CUBE-TCM SUPPORT!***
@@ -24,3 +31,4 @@ build cube-tcm environment => [here](<https://github.com/Akiko97/auto-vtcm>)
 sudo qemu-system-x86_64 -m 1024 -smp 4 -hda ./ubuntu.img
 ```
 `sudo` is needed!
+
