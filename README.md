@@ -28,7 +28,5 @@ sudo ./modtools.sh remove
 build cube-tcm environment => [here](<https://github.com/Akiko97/auto-vtcm>)
 ## Run QEMU
 ```shell
-sudo qemu-system-x86_64 -m 1024 -smp 4 -hda ./ubuntu.img
+qemu-system-x86_64 -m 1024 -smp 4 -hda ./ubuntu.img
 ```
-`sudo` is needed!
-
