@@ -7,5 +7,5 @@ all:
 	$(MAKE) -C $(BUILD) M=$(PWD) modules;
 
 clean:
-	$(MAKE) -C $(BUILD) SUBDIRS=$(PWD) clean;
+	$(MAKE) -C $(BUILD) M=$(PWD) clean;
 	rm -f *.ko
