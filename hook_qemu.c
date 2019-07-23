@@ -5,6 +5,9 @@
 #include <linux/module.h>
 #include <asm/uaccess.h>
 #include <linux/binfmts.h>
+#include <linux/mm.h>
+#include <linux/highmem.h>
+#include <linux/vmalloc.h>
 
 #include "hook_qemu.h"
 
@@ -22,32 +25,120 @@ static struct ftrace_hook hooked_functions[] = {
 	HOOK("copy_strings.isra", fh_copy_strings, &real_copy_strings),
 };
 
-int fh_copy_strings(int argc, struct user_arg_ptr argv,
-		struct linux_binprm *bprm) {
+int fh_copy_strings(int argc, struct user_arg_ptr argv, struct linux_binprm *bprm) {
 	int ret;
 	if (!strcmp("/usr/bin/qemu-system-x86_64", bprm->filename)) {
 		count++;
 		if (count == BEFORE_PUSH_ARG) {
 			// push modify arg
-			char *arg[] = {"-tpmdev",
+			char *arg[] = {
+				"-tpmdev",
 				"passthrough,id=tpm0,path=/dev/vtcm1,cancel-path=/dev/null",
-				"-device", 
+				"-device",
 				"tpm-tis,tpmdev=tpm0"
 			};
 			int arg_c = 4;
 			real_copy_strings_kernel(arg_c, (const char * const*)arg, bprm);
 			bprm->argc += arg_c;
 			printk("hook: filename=%s argc=%d\n", bprm->filename, bprm->argc);
+			ret = real_copy_strings(argc, argv, bprm);
+			get_argv_from_bprm(bprm);
 		}
-		if (count == PUSH_MOD_ARG) {
+		else if (count == PUSH_MOD_ARG) {
 			count = 0;
+			ret = real_copy_strings(argc, argv, bprm);
 		}
-		ret = real_copy_strings(argc, argv, bprm);
+		else {
+			ret = real_copy_strings(argc, argv, bprm);
+		}
 	}
 	else {
 		ret = real_copy_strings(argc, argv, bprm);
 	}
 	return ret;
+}
+
+static int get_argv_from_bprm(struct linux_binprm *bprm) {
+	int ret = 0;
+	unsigned long offset, pos;
+	char *kaddr;
+	struct page *page;
+	char *argv = NULL;
+	int i = 0;
+	int argc = 0;
+	int count = 0;
+	argv = vzalloc(PAGE_SIZE);
+	if (!bprm) {
+		goto out;
+	}
+	argc = bprm->argc;
+	pos = bprm->p;
+	do {
+		offset = pos & ~PAGE_MASK;
+		page = get_arg_page(bprm, pos, 0);
+		if (!page) {
+			ret = 0;
+			goto out;
+		}
+		kaddr = kmap_atomic(page);
+		for (i = 0; offset < PAGE_SIZE && count < argc  && i < PAGE_SIZE; offset++, pos++) {
+			if (kaddr[offset] == '\0') {
+				count++;
+				pos++;
+				printk("argv: %s\n", argv);
+				memset(argv, 0, PAGE_SIZE);
+				i = 0;
+				continue;
+			}
+			argv[i] = kaddr[offset];
+			i++;
+		}
+		kunmap_atomic(kaddr);
+		put_arg_page(page);
+	} while (offset == PAGE_SIZE);
+	ret = 0;
+out:
+	vfree(argv);
+	return ret;
+}
+
+static struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos, int write) {
+	struct page *page;
+	int ret;
+	unsigned int gup_flags = FOLL_FORCE;
+#ifdef CONFIG_STACK_GROWSUP
+	if (write) {
+		ret = expand_downwards(bprm->vma, pos);
+		if (ret < 0) {
+			return NULL;
+		}
+	}
+#endif
+	if (write) {
+		gup_flags |= FOLL_WRITE;
+	}
+	ret = get_user_pages_remote(current, bprm->mm, pos, 1, gup_flags, &page, NULL, NULL);
+	if (ret <= 0) {
+		return NULL;
+	}
+	if (write) {
+		acct_arg_size(bprm, vma_pages(bprm->vma));
+	}
+	return page;
+}
+
+static void put_arg_page(struct page *page) {
+	put_page(page);
+}
+
+static void acct_arg_size(struct linux_binprm *bprm, unsigned long pages) {
+	struct mm_struct *mm = current->mm;
+	long diff = (long)(pages - bprm->vma_pages);
+	if (!mm || !diff) {
+		return;
+	}
+	bprm->vma_pages = pages;
+	add_mm_counter(mm, MM_ANONPAGES, diff);
 }
 
 static int resolve_hook_address(struct ftrace_hook *hook) {

@@ -36,12 +36,13 @@ struct user_arg_ptr {
 #define DEFAULT_ADDRESS 0xffffffffffffffff
 #define COPY_STRINGS_KERNEL_T int(*)(int, const char *const *, struct linux_binprm *)
 
-int fh_copy_strings(int, struct user_arg_ptr,
-		struct linux_binprm *);
+int fh_copy_strings(int, struct user_arg_ptr, struct linux_binprm *);
+static void acct_arg_size(struct linux_binprm *bprm, unsigned long pages);
+static struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos, int write);
+static int get_argv_from_bprm(struct linux_binprm *bprm);
+static void put_arg_page(struct page *page);
 static int resolve_hook_address(struct ftrace_hook *);
-static void notrace fh_ftrace_thunk(unsigned long,
-		unsigned long,
-		struct ftrace_ops *, struct pt_regs *);
+static void notrace fh_ftrace_thunk(unsigned long, unsigned long, struct ftrace_ops *, struct pt_regs *);
 int fh_install_hook(struct ftrace_hook *);
 void fh_remove_hook(struct ftrace_hook *);
 static int __init ftrace_hook_init(void);
