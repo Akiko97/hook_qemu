@@ -68,7 +68,7 @@ static int get_argv_from_bprm(struct linux_binprm *bprm) {
 	int argc = 0;
 	int count = 0;
 	argv = vzalloc(PAGE_SIZE);
-	if (!bprm) {
+	if (!bprm || !argv) {
 		goto out;
 	}
 	argc = bprm->argc;
