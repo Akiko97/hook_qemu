@@ -36,7 +36,15 @@ struct user_arg_ptr {
 #define DEFAULT_ADDRESS 0xffffffffffffffff
 #define COPY_STRINGS_KERNEL_T int(*)(int, const char *const *, struct linux_binprm *)
 
+#define NETLINK_UNIT		30
+#define MSG_LEN				1024
+#define USER_PORT			100
+
 int fh_copy_strings(int, struct user_arg_ptr, struct linux_binprm *);
+static int netlink_connect(void);
+static void netlink_disconnect(void);
+int send_msg( const char *,uint16_t);
+static void rcv_msg(struct sk_buff *);
 static void acct_arg_size(struct linux_binprm *bprm, unsigned long pages);
 static struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos, int write);
 static int get_argv_from_bprm(struct linux_binprm *bprm);
