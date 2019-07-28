@@ -5,13 +5,13 @@ hook qemu-system-x86_64 and add vtcm support
 
 compile:
 
-* in ./:
+* in `./`:
 
   ```shell
   make
   ```
 
-* in cube_module/src/show_vtcm and cube_module/src/vtcm_memdb:
+* in `cube_module/src/show_vtcm` and `cube_module/src/vtcm_memdb`:
 
   ```shell
   make
