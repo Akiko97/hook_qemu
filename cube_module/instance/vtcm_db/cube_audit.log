@@ -1,0 +1,65 @@
+time: 0.0 :read 2 elem from file /home/akiko/Desktop/auto-vtcm-old-new/cube-1.3/proc/main/base_define/namelist.json!
+
+time: 0.001320 :read 4 elem from file /home/akiko/Desktop/auto-vtcm-old-new/cube-1.3/proc/main/base_define/dispatchnamelist.json!
+
+time: 0.002108 :read 1 elem from file /home/akiko/Desktop/auto-vtcm-old-new/cube-1.3/proc/main/base_define/typelist.json!
+
+time: 0.003058 :read 7 elem from file /home/akiko/Desktop/auto-vtcm-old-new/cube-1.3/proc/main/base_define/subtypelist.json!
+
+time: 0.003786 :read 1 elem from file /home/akiko/Desktop/auto-vtcm-old-new/cube-1.3/proc/main/base_define/baseflag.json!
+
+time: 0.004361 :read 3 elem from file /home/akiko/Desktop/auto-vtcm-old-new/cube-1.3/proc/main/base_define/memdb.json!
+
+time: 0.005233 :read 6 elem from file /home/akiko/Desktop/auto-vtcm-old-new/cube-1.3/proc/main/base_define/msghead.json!
+
+time: 0.005876 :read 2 elem from file /home/akiko/Desktop/auto-vtcm-old-new/cube-1.3/proc/main/base_define/msgrecord.json!
+
+time: 0.006552 :read 3 elem from file /home/akiko/Desktop/auto-vtcm-old-new/cube-1.3/proc/main/base_define/expandrecord.json!
+
+time: 0.008018 :read 10 elem from file /home/akiko/Desktop/auto-vtcm-old-new/cube-1.3/proc/main/base_define/base_msg.json!
+
+time: 0.008779 :read 3 elem from file /home/akiko/Desktop/auto-vtcm-old-new/cube-1.3/proc/main/base_define/dispatchrecord.json!
+
+time: 0.009467 :read 2 elem from file /home/akiko/Desktop/auto-vtcm-old-new/cube-1.3/proc/main/base_define/exmoduledefine.json!
+
+time: 0.010101 :read 1 elem from file /home/akiko/Desktop/auto-vtcm-old-new/cube-1.3/proc/main/base_define/sys_conn.json!
+
+time: 0.013980 :read 5 elem from file vtcm_memdb.json!
+
+time: 0.020014 :this machine's local uuid is f96e5b884a0414a35fb1374787d4dadbd49b6b84a1b921b72db55700f040b5fa
+
+time: 0.022094 :read 1 connector!
+
+time: 0.022126 :conn server vtcm_rsp begin to listen!
+
+time: 0.023083 :read 1 policy succeed!
+time: 0.023137 :prepare the router proc
+
+time: 0.024099 :prepare the conn proc
+
+time: 0.024263 :monitor ex_modulec router_proc started successfully!
+
+time: 0.024303 :monitor ex_modulec vtcm_memdb started successfully!
+
+time: 11.586699 :create a new channel 4c000b30!
+
+time: 11.586834 :send 270 data to conn (null)!
+
+time: 11.587411 :channel set name get_vtcm!
+
+time: 11.587462 :router get proc connector_proc's message 
+time: 11.587561 :discard message: message 40f09dfc type MESSAGE CONN_ACKI to 
+time: 11.592647 :channel receive (12544 1) message from conn get_vtcm!
+
+time: 11.592667 :client forward (12544 1) message to main proc!
+
+time: 11.592735 :router get proc connector_proc's message 
+time: 11.592792 :normal message prepare to send: message 93fe61a0 type VTCM_MEMDB IN to vtcm_memdb
+time: 11.592982 :router get proc vtcm_memdb's message 
+time: 11.593056 :begin to response query message
+time: 11.593082 :normal message prepare to send: message 93fe61a0 type VTCM_MEMDB OUT to 6hœ
+time: 11.593086 :send message to conn process!
+time: 11.604630 :send 186 data to conn get_vtcm!
+
+time: 11.604663 :send (12544  2)message 186 to conn get_vtcm!
+

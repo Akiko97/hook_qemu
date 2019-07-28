@@ -5,9 +5,17 @@ hook qemu-system-x86_64 and add vtcm support
 
 compile:
 
-```shell
-make
-```
+* in ./:
+
+  ```shell
+  make
+  ```
+
+* in cube_module/src/show_vtcm and cube_module/src/vtcm_memdb:
+
+  ```shell
+  make
+  ```
 
 load:
 
@@ -28,5 +36,7 @@ sudo ./modtools.sh remove
 build cube-tcm environment => [here](<https://github.com/Akiko97/auto-vtcm>)
 ## Run QEMU
 ```shell
-qemu-system-x86_64 -m 1024 -smp 4 -hda ./ubuntu.img
+chmod 777 ./run_qemu.sh
+./run_qemu.sh
 ```
+

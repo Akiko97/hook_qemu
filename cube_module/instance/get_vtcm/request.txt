@@ -1,0 +1,8 @@
+{
+	"type":"VTCM_MEMDB",
+	"subtype":"IN",
+	"mode":"INT"
+}
+{
+	"img_name":"/home/akiko/Desktop/ubuntu.img"
+}

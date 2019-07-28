@@ -1,0 +1,11 @@
+
+**************Begin new trust node proc****************************
+{ "HEAD":{"tag":"MESG","version":65537,"sender_uuid":"connector_proc","receiver_uuid":"","route":"","flow":"FINISH","state":"INIT","flag":"NULL","ljump":1,"rjump":1,"record_type":"MESSAGE","record_subtype":"CONN_ACKI","record_num":1,"record_size":153,"expand_num":0,"expand_size":0,"msg_uuid":"fc9df040011cfcb204a5a72e78a96bfa645caf50f4f8b9037a6f652584cffb66"},"RECORD":[{"uuid":"f96e5b884a0414a35fb1374787d4dadbd49b6b84a1b921b72db55700f040b5fa","client_name":"get_vtcm","client_proc":"get_vtcm","client_addr":"unknown addr","server_uuid":"f96e5b884a0414a35fb1374787d4dadbd49b6b84a1b921b72db55700f040b5fa","server_name":"vtcm_db","service":"trust_server","server_addr":"","flags":0,"nonce":""}],"EXPAND" :[]}
+
+************************************************************
+{ "HEAD":{"tag":"MESG","version":65537,"sender_uuid":"connector_proc","receiver_uuid":"vtcm_memdb","route":"get_vtcm","flow":"QUERY","state":"DELIVER","flag":"LOCAL","ljump":1,"rjump":2,"record_type":"VTCM_MEMDB","record_subtype":"IN","record_num":1,"record_size":31,"expand_num":1,"expand_size":48,"msg_uuid":"a061fe9357b8566ef595b05be8343c2fe36817f12bec9e82d6eb4d20157cde50"},"RECORD":[{"img_name":"/home/akiko/Desktop/ubuntu.img"}],"EXPAND" :[{"data_size":0,"type":"MSG_EXPAND","subtype":"FLOW_TRACE","expand":{"record_num":1,"trace_record":["3668cf001371fa2f4f8025761e8a9d8579dcedcd412f3d7be824fa3457cd8980"]}}]}
+
+************************************************************
+{ "HEAD":{"tag":"MESG","version":65537,"sender_uuid":"vtcm_memdb","receiver_uuid":"3668cf001371fa2f4f8025761e8a9d8579dcedcd412f3d7be824fa3457cd8980","route":"get_vtcm","flow":"QUERY","state":"DELIVER","flag":"RESPONSE","ljump":2,"rjump":2,"record_type":"VTCM_MEMDB","record_subtype":"OUT","record_num":1,"record_size":0,"expand_num":0,"expand_size":0,"msg_uuid":"a061fe9357b8566ef595b05be8343c2fe36817f12bec9e82d6eb4d20157cde50"},"RECORD":[{"vtcm_name":"vtcm0"}],"EXPAND" :[]}
+
+************************************************************

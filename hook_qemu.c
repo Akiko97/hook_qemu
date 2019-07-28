@@ -33,6 +33,8 @@ static struct ftrace_hook hooked_functions[] = {
 	HOOK("copy_strings.isra", fh_copy_strings, &real_copy_strings),
 };
 
+char vtcm_name[TPM_DEV_SIZE];
+
 static int netlink_connect(void) {
 	int ret = 0;
 	if (!nlsk) {
@@ -64,7 +66,7 @@ static void netlink_disconnect(void) {
 }
 
 int send_msg(const char *pbuf, uint16_t len) {
-	int ret;
+	int ret = 0;
 	struct sk_buff *nl_skb;
 	struct nlmsghdr * nlh;
 
@@ -104,30 +106,89 @@ static void rcv_msg(struct sk_buff *skb) {
 		}
 		len = nlmsg_len(nlh);
 		printk("receive message: %s (size %d)\n", umsg, len);
+		strcpy(vtcm_name, umsg);
 	}
 out:
 	return;
 }
 
 int fh_copy_strings(int argc, struct user_arg_ptr argv, struct linux_binprm *bprm) {
-	int ret;
+	int ret = 0;
+	int i = 0;
+	char **args = NULL;
+	char *arg[INSERT_ARG_NUM] = {
+		"-tpmdev",
+		NULL,
+		"-device",
+		"tpm-tis,tpmdev=tpm0"
+	};
+	int flag = 0;
+	char uuid[VM_UUID_SIZE];
+	int c = 0;
 	if (!strcmp("/usr/bin/qemu-system-x86_64", bprm->filename)) {
 		count++;
 		if (count == BEFORE_PUSH_ARG) {
-			// push modify arg
-			char *arg[] = {
-				"-tpmdev",
-				"passthrough,id=tpm0,path=/dev/vtcm1,cancel-path=/dev/null",
-				"-device",
-				"tpm-tis,tpmdev=tpm0"
-			};
-			int arg_c = 4;
-			real_copy_strings_kernel(arg_c, (const char * const*)arg, bprm);
-			bprm->argc += arg_c;
+			// start
+			args = vzalloc(sizeof(char *) * argc);
+			for (i = 0; i < argc; i++) {
+				args[i] = vzalloc(PAGE_SIZE);
+			}
+			ret = get_argv_from_argv(argc, argv, args);
+			if (ret < 0) {
+				printk("error in get_argv_from_argv\n");
+			}
+			for (i = 0; i < argc; i++) {
+				if (flag) {
+					flag = 0;
+					memcpy(uuid, args[i], VM_UUID_SIZE);
+					break;
+				}
+				if (!strcmp(args[i], "-uuid")) {
+					flag = 1;
+				}
+			}
+			for (i = 0; i < argc; i++) {
+				vfree(args[i]);
+				args[i] = NULL;
+			}
+			vfree(args);
+			args = NULL;
+			// end
+			send_msg(uuid, VM_UUID_SIZE);
+			while (!strlen(vtcm_name)) {
+				msleep(10);
+				c++;
+				if (c > 99) {
+					printk("ERROR: receive db message timeout!\n");
+					c = 0;
+					goto out;
+				}
+			}
+			arg[1] = vzalloc(PAGE_SIZE);
+			memcpy(arg[1], "passthrough,id=tpm0,path=/dev/", 31);
+			strcat(arg[1], vtcm_name);
+			strcat(arg[1], ",cancel-path=/dev/null");
+			memset(vtcm_name, 0, TPM_DEV_SIZE);
+			real_copy_strings_kernel(INSERT_ARG_NUM, (const char * const*)arg, bprm);
+			vfree(arg[1]);
+			arg[1] = NULL;
+			bprm->argc += INSERT_ARG_NUM;
 			printk("hook: filename=%s argc=%d\n", bprm->filename, bprm->argc);
 			ret = real_copy_strings(argc, argv, bprm);
-			get_argv_from_bprm(bprm);
-			send_msg("Hello, World", 13);
+			// start
+			args = vzalloc(sizeof(char *) * bprm->argc);
+			for (i = 0; i < bprm->argc; i++) {
+				args[i] = vzalloc(PAGE_SIZE);
+			}
+			get_argv_from_bprm(bprm, args);
+			for (i = 0; i < bprm->argc; i++) {
+				printk("arg %d: %s\n", i, args[i]);
+				vfree(args[i]);
+				args[i] = NULL;
+			}
+			vfree(args);
+			args = NULL;
+			// end
 		}
 		else if (count == PUSH_MOD_ARG) {
 			count = 0;
@@ -140,10 +201,39 @@ int fh_copy_strings(int argc, struct user_arg_ptr argv, struct linux_binprm *bpr
 	else {
 		ret = real_copy_strings(argc, argv, bprm);
 	}
+out:
 	return ret;
 }
 
-static int get_argv_from_bprm(struct linux_binprm *bprm) {
+static int get_argv_from_argv(int argc, struct user_arg_ptr argv, char **args) {
+	int ret = 0;
+	int i = 0;
+	while (i < argc) {
+		const char __user *str;
+		int len;
+		char *s = vzalloc(PAGE_SIZE);
+		str = get_user_arg_ptr(argv, i);
+		if (IS_ERR(str)) {
+			ret = -EFAULT;
+			goto out;
+		}
+		len = strnlen_user(str, MAX_ARG_STRLEN);
+		if (!len) {
+			ret = -EFAULT;
+			goto out;
+		}
+		if (copy_from_user(s, str, len)) {
+			ret = -EFAULT;
+			goto out;
+		}
+		memcpy(args[i++], s, PAGE_SIZE);
+		vfree(s);
+	}
+out:
+	return ret;
+}
+
+static int get_argv_from_bprm(struct linux_binprm *bprm, char **args) {
 	int ret = 0;
 	unsigned long offset, pos;
 	char *kaddr;
@@ -168,9 +258,10 @@ static int get_argv_from_bprm(struct linux_binprm *bprm) {
 		kaddr = kmap_atomic(page);
 		for (i = 0; offset < PAGE_SIZE && count < argc  && i < PAGE_SIZE; offset++, pos++) {
 			if (kaddr[offset] == '\0') {
-				count++;
+				//count++;
 				pos++;
-				printk("argv: %s\n", argv);
+				//printk("argv: %s\n", argv);
+				memcpy(args[count++], argv, PAGE_SIZE);
 				memset(argv, 0, PAGE_SIZE);
 				i = 0;
 				continue;
@@ -189,7 +280,7 @@ out:
 
 static struct page *get_arg_page(struct linux_binprm *bprm, unsigned long pos, int write) {
 	struct page *page;
-	int ret;
+	int ret = 0;
 	unsigned int gup_flags = FOLL_FORCE;
 #ifdef CONFIG_STACK_GROWSUP
 	if (write) {
@@ -224,6 +315,23 @@ static void acct_arg_size(struct linux_binprm *bprm, unsigned long pages) {
 	}
 	bprm->vma_pages = pages;
 	add_mm_counter(mm, MM_ANONPAGES, diff);
+}
+
+static const char __user *get_user_arg_ptr(struct user_arg_ptr argv, int nr) {
+	const char __user *native;
+#ifdef CONFIG_COMPAT
+	if (unlikely(argv.is_compat)) {
+		compat_uptr_t compat;
+		if (get_user(compat, argv.ptr.compat + nr)) {
+			return ERR_PTR(-EFAULT);
+		}
+		return compat_ptr(compat);
+	}
+#endif
+	if (get_user(native, argv.ptr.native + nr)) {
+		return ERR_PTR(-EFAULT);
+	}
+	return native;
 }
 
 static int resolve_hook_address(struct ftrace_hook *hook) {
@@ -277,9 +385,10 @@ void fh_remove_hook(struct ftrace_hook *hook) {
 }
 
 static int __init ftrace_hook_init(void) {
-	int ret;
+	int ret = 0;
 	ret = fh_install_hook(&(hooked_functions[0]));
 	real_copy_strings_kernel = (COPY_STRINGS_KERNEL_T)kallsyms_lookup_name("copy_strings_kernel");
+	memset(vtcm_name, 0, TPM_DEV_SIZE);
 	printk("hook installed with return value %d\n", ret);
 	ret = netlink_connect();
 	return ret;

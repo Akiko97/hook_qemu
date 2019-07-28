@@ -1,0 +1,64 @@
+time: 0.0 :read 2 elem from file /home/akiko/Desktop/auto-vtcm-old-new/cube-1.3/proc/main/base_define/namelist.json!
+
+time: 0.000295 :read 4 elem from file /home/akiko/Desktop/auto-vtcm-old-new/cube-1.3/proc/main/base_define/dispatchnamelist.json!
+
+time: 0.000403 :read 1 elem from file /home/akiko/Desktop/auto-vtcm-old-new/cube-1.3/proc/main/base_define/typelist.json!
+
+time: 0.000857 :read 7 elem from file /home/akiko/Desktop/auto-vtcm-old-new/cube-1.3/proc/main/base_define/subtypelist.json!
+
+time: 0.000945 :read 1 elem from file /home/akiko/Desktop/auto-vtcm-old-new/cube-1.3/proc/main/base_define/baseflag.json!
+
+time: 0.001769 :read 3 elem from file /home/akiko/Desktop/auto-vtcm-old-new/cube-1.3/proc/main/base_define/memdb.json!
+
+time: 0.002585 :read 6 elem from file /home/akiko/Desktop/auto-vtcm-old-new/cube-1.3/proc/main/base_define/msghead.json!
+
+time: 0.003000 :read 2 elem from file /home/akiko/Desktop/auto-vtcm-old-new/cube-1.3/proc/main/base_define/msgrecord.json!
+
+time: 0.003458 :read 3 elem from file /home/akiko/Desktop/auto-vtcm-old-new/cube-1.3/proc/main/base_define/expandrecord.json!
+
+time: 0.004328 :read 10 elem from file /home/akiko/Desktop/auto-vtcm-old-new/cube-1.3/proc/main/base_define/base_msg.json!
+
+time: 0.004855 :read 3 elem from file /home/akiko/Desktop/auto-vtcm-old-new/cube-1.3/proc/main/base_define/dispatchrecord.json!
+
+time: 0.005317 :read 2 elem from file /home/akiko/Desktop/auto-vtcm-old-new/cube-1.3/proc/main/base_define/exmoduledefine.json!
+
+time: 0.005656 :read 1 elem from file /home/akiko/Desktop/auto-vtcm-old-new/cube-1.3/proc/main/base_define/sys_conn.json!
+
+time: 0.009474 :read 5 elem from file vtcm_memdb.json!
+
+time: 0.015966 :this machine's local uuid is f96e5b884a0414a35fb1374787d4dadbd49b6b84a1b921b72db55700f040b5fa
+
+time: 0.016679 :read 1 connector!
+
+time: 0.016799 :read 1 policy succeed!
+time: 0.016846 :prepare the router proc
+
+time: 0.020433 :prepare the conn proc
+
+time: 0.020565 :monitor ex_modulec router_proc started successfully!
+
+time: 0.020599 :start ex_module msg_send started successfully!
+
+time: 0.020622 :monitor ex_modulec show_vtcm started successfully!
+
+time: 0.020907 :begin msgfile_send module!
+
+time: 0.021453 :proc conn client receive 270 data!
+
+time: 0.021805 :send 333 data to conn vtcm_req!
+
+time: 0.021849 :client vtcm_req send 333 ack data to server !
+
+time: 0.021892 :router get proc connector_proc's message 
+time: 0.022121 :discard message: message 40f09dfc type MESSAGE CONN_SYNI to 
+time: 0.022151 :router get proc msg_send's message 
+time: 0.022413 :normal message prepare to send: message 93fe61a0 type VTCM_MEMDB IN to :vtcm_req
+time: 0.022445 :send message to conn process!
+time: 0.026977 :send 259 data to conn vtcm_req!
+
+time: 0.027023 :send (12544  1)message 259 to conn vtcm_req!
+
+time: 0.039176 :proc conn client receive 186 data!
+
+time: 0.039376 :router get proc connector_proc's message 
+time: 0.039549 :normal message prepare to send: message 93fe61a0 type VTCM_MEMDB OUT to show_vtcm

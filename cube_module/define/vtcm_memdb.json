@@ -1,0 +1,91 @@
+{
+	"head":
+	{
+		"name":"dtype_vtcm_memdb",
+		"type":"TYPELIST"
+	},
+	"record":
+	{
+		"elem_no":1,
+		"elemlist":
+		[
+			"VTCM_MEMDB=0x3100"
+		]
+	}
+}
+{
+	"head":
+	{
+		"name":"subtype_vtcm_memdb",
+		"type":"SUBTYPELIST"
+	},
+	"record":
+	{
+		"type":"VTCM_MEMDB",
+		"elem_no":3,
+		"elemlist":
+		[
+			"IN=0x01",
+			"OUT",
+			"STORE"
+		]
+	}
+}
+{
+	"head":
+	{
+		"name":"vtcm_memdb_in",
+		"type":"RECORDTYPE"
+	},
+	"record":
+	{
+		"type":"VTCM_MEMDB",
+		"subtype":"IN",
+		"struct_desc":
+		{
+			"elem_desc":
+			[
+				{"name":"img_name", "type":"ESTRING", "size":512}
+			]
+		}
+	}
+}
+{
+	"head":
+	{
+		"name":"vtcm_memdb_out",
+		"type":"RECORDTYPE"
+	},
+	"record":
+	{
+		"type":"VTCM_MEMDB",
+		"subtype":"OUT",
+		"struct_desc":
+		{
+			"elem_desc":
+			[
+				{"name":"vtcm_name", "type":"ESTRING", "size":32}
+			]
+		}
+	}
+}
+{
+	"head":
+	{
+		"name":"vtcm_memdb_store",
+		"type":"RECORDTYPE"
+	},
+	"record":
+	{
+		"type":"VTCM_MEMDB",
+		"subtype":"STORE",
+		"struct_desc":
+		{
+			"elem_desc":
+			[
+				{"name":"img_name", "type":"ESTRING", "size":512},
+				{"name":"vtcm_name", "type":"ESTRING", "size":32}
+			]
+		}
+	}
+}
