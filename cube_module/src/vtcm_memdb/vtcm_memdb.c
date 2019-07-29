@@ -35,10 +35,7 @@ int vtcm_memdb_start(void *sub_proc, void *para) {
 	while (1) {
 		usleep(time_val.tv_usec);
 		ret = ex_module_recvmsg(sub_proc,&recv_msg);
-		if (ret < 0) {
-			continue;
-		}
-		if (!recv_msg) {
+		if (ret < 0 || !recv_msg) {
 			continue;
 		}
 		type = message_get_type(recv_msg);
@@ -51,10 +48,11 @@ int vtcm_memdb_start(void *sub_proc, void *para) {
 			ret = proc_get_vtcm(sub_proc, recv_msg);
 		}
 	}
-	return 0;
+	return ret;
 }
+
 int proc_get_vtcm(void *sub_proc, void *recv_msg) {
-	int ret;
+	int ret = 0;
 	RECORD(VTCM_MEMDB,IN) *in;
 	RECORD(VTCM_MEMDB,OUT) *out;
 	RECORD(VTCM_MEMDB,STORE) *store = Talloc0(sizeof(*store));
@@ -69,29 +67,33 @@ int proc_get_vtcm(void *sub_proc, void *recv_msg) {
 	DB_RECORD *db_record;
 	db_record = memdb_find_byname(in->img_name, TYPE_PAIR(VTCM_MEMDB, STORE));
 	if (!db_record) {
-		printf("NO FOUND\n");
 		store->img_name = in->img_name;
-		char *buff = malloc(sizeof(*buff) * 32);
+		char *buff = malloc(sizeof(*buff) * TPM_DEV_SIZE);
+		memset(buff, 0, TPM_DEV_SIZE);
 		get_vtcm_now(buff);
-		char vtcm_name[32] = "vtcm";
+		char vtcm_name[TPM_DEV_SIZE] = "vtcm";
 		strcat(vtcm_name, buff);
 		store->vtcm_name = vtcm_name;
 		db_record = memdb_store(store, TYPE_PAIR(VTCM_MEMDB, STORE), in->img_name);
 		if (!db_record) {
-			return -EINVAL;
+			ret = -EINVAL;
+			return ret;
 		}
+		printf("%s (NEW RECORD)\n", vtcm_name);
 	}
 	else {
-		printf("FOUND ------ %s\n", ((RECORD(VTCM_MEMDB,STORE)*)(db_record->record))->vtcm_name);
+		printf("%s (FOUND)\n", ((RECORD(VTCM_MEMDB,STORE)*)(db_record->record))->vtcm_name);
 	}
 	out = Talloc0(sizeof(*out));
-	if(!out) {
-		return -ENOMEM;
+	if (!out) {
+		ret = -ENOMEM;
+		return ret;
 	}
 	out->vtcm_name = dup_str(((RECORD(VTCM_MEMDB,STORE)*)(db_record->record))->vtcm_name, 0);
 	new_msg = message_create(TYPE_PAIR(VTCM_MEMDB,OUT),recv_msg);
 	if (!new_msg) {
-		return -EINVAL;
+		ret = -EINVAL;
+		return ret;
 	}
 	ret = message_add_record(new_msg, out);
 	if (ret < 0) {
@@ -103,7 +105,7 @@ int proc_get_vtcm(void *sub_proc, void *recv_msg) {
 }
 
 int get_vtcm_now(char *buff) {
-	int ret;
+	int ret = 0;
 	ret = sprintf(buff, "%d", vtcm_num);
 	vtcm_num++;
 	return ret;

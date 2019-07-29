@@ -40,14 +40,14 @@ static int netlink_connect(void) {
 	if (!nlsk) {
 		nlsk = (struct sock *)netlink_kernel_create(&init_net, NETLINK_UNIT, &cfg);
 		if (!nlsk) {
-			printk("failed in netlink_kernel_create\n");
+			printk("netlink error: failed in netlink_kernel_create\n");
 			ret = -EINVAL;
 			goto out;
 		}
-		printk("connect netlink!\n");
+		printk("netlink message: connect netlink\n");
 	}
 	else {
-		printk("already have a netlink connetion\n");
+		printk("netlink message: already have a netlink connetion\n");
 	}
 out:
 	return ret;
@@ -58,10 +58,10 @@ static void netlink_disconnect(void) {
 		sock_release(nlsk->sk_socket);
 		netlink_kernel_release(nlsk);
 		nlsk = NULL;
-		printk("netlink exit!\n");
+		printk("netlink message: netlink exit\n");
 	}
 	else {
-		printk("vtcm netlink NULL!\n");
+		printk("netlink error: vtcm netlink NULL\n");
 	}
 }
 
@@ -72,20 +72,19 @@ int send_msg(const char *pbuf, uint16_t len) {
 
 	nl_skb = nlmsg_new(len, GFP_ATOMIC);
 	if (!nl_skb) {
-		printk("netlink alloc failure\n");
-		ret = -1;
+		printk("netlink error: netlink alloc failure\n");
+		ret = -EINVAL;
 		goto out;
 	}
 
 	nlh = nlmsg_put(nl_skb, 0, 0, NETLINK_UNIT, len, 0);
 	if(!nlh) {
-		printk("nlmsg_put failaure\n");
+		printk("netlink error: nlmsg_put failaure\n");
 		nlmsg_free(nl_skb);
-		ret = -1;
+		ret = -EINVAL;
 		goto out;
 	}
 
-	printk("send data len %d data %s\n", len, pbuf);
 	memcpy(nlmsg_data(nlh), pbuf, len);
 	ret = netlink_unicast(nlsk, nl_skb, USER_PORT, MSG_DONTWAIT);
 out:
@@ -101,15 +100,52 @@ static void rcv_msg(struct sk_buff *skb) {
 		nlh = nlmsg_hdr(skb);
 		umsg = NLMSG_DATA(nlh);
 		if (!umsg) {
-			printk("netlink rcv msg error!\n");
+			printk("netlink error: netlink rcv msg error\n");
 			goto out;
 		}
 		len = nlmsg_len(nlh);
-		printk("receive message: %s (size %d)\n", umsg, len);
 		strcpy(vtcm_name, umsg);
 	}
 out:
 	return;
+}
+
+char **alloc_args(char **args, int argc) {
+	int i = 0;
+	args = vzalloc(sizeof(char *) * argc);
+	if (!args) {
+		goto out;
+	}
+	for (i = 0; i < argc; i++) {
+		args[i] = vzalloc(MAX_ARG_STRLEN);
+		if (!args[i]) {
+			int tmp = i;
+			for (i = 0; i <= tmp; i++) {
+				vfree(args[i]);
+				args[i] = NULL;
+			}
+			vfree(args);
+			args = NULL;
+			goto out;
+		}
+	}
+out:
+	return args;
+}
+
+char **free_args(char **args, int argc) {
+	int i = 0;
+	if (!args) {
+		goto out;
+	}
+	for (i = 0; i < argc; i++) {
+		vfree(args[i]);
+		args[i] = NULL;
+	}
+	vfree(args);
+	args = NULL;
+out:
+	return args;
 }
 
 int fh_copy_strings(int argc, struct user_arg_ptr argv, struct linux_binprm *bprm) {
@@ -125,19 +161,17 @@ int fh_copy_strings(int argc, struct user_arg_ptr argv, struct linux_binprm *bpr
 	int flag = 0;
 	char uuid[VM_UUID_SIZE];
 	int c = 0;
+	int u_argc = argc;
 	if (!strcmp("/usr/bin/qemu-system-x86_64", bprm->filename)) {
 		count++;
 		if (count == BEFORE_PUSH_ARG) {
-			// start
-			args = vzalloc(sizeof(char *) * argc);
-			for (i = 0; i < argc; i++) {
-				args[i] = vzalloc(PAGE_SIZE);
-			}
-			ret = get_argv_from_argv(argc, argv, args);
+			args = alloc_args(args, u_argc);
+			ret = get_argv_from_argv(u_argc, argv, args);
 			if (ret < 0) {
-				printk("error in get_argv_from_argv\n");
+				printk("Copy strings error: get_argv_from_argv failaure\n");
+				goto out;
 			}
-			for (i = 0; i < argc; i++) {
+			for (i = 0; i < u_argc; i++) {
 				if (flag) {
 					flag = 0;
 					memcpy(uuid, args[i], VM_UUID_SIZE);
@@ -147,19 +181,13 @@ int fh_copy_strings(int argc, struct user_arg_ptr argv, struct linux_binprm *bpr
 					flag = 1;
 				}
 			}
-			for (i = 0; i < argc; i++) {
-				vfree(args[i]);
-				args[i] = NULL;
-			}
-			vfree(args);
-			args = NULL;
-			// end
+			args = free_args(args, u_argc);
 			send_msg(uuid, VM_UUID_SIZE);
 			while (!strlen(vtcm_name)) {
 				msleep(10);
 				c++;
 				if (c > 99) {
-					printk("ERROR: receive db message timeout!\n");
+					printk("Receive message error: receive db message timeout\n");
 					c = 0;
 					goto out;
 				}
@@ -173,22 +201,15 @@ int fh_copy_strings(int argc, struct user_arg_ptr argv, struct linux_binprm *bpr
 			vfree(arg[1]);
 			arg[1] = NULL;
 			bprm->argc += INSERT_ARG_NUM;
-			printk("hook: filename=%s argc=%d\n", bprm->filename, bprm->argc);
+			printk("Hit process: filename=%s argc=%d\n", bprm->filename, bprm->argc);
 			ret = real_copy_strings(argc, argv, bprm);
-			// start
-			args = vzalloc(sizeof(char *) * bprm->argc);
-			for (i = 0; i < bprm->argc; i++) {
-				args[i] = vzalloc(PAGE_SIZE);
-			}
+			u_argc = bprm->argc;
+			args = alloc_args(args, u_argc);
 			get_argv_from_bprm(bprm, args);
-			for (i = 0; i < bprm->argc; i++) {
-				printk("arg %d: %s\n", i, args[i]);
-				vfree(args[i]);
-				args[i] = NULL;
+			for (i = 0; i < u_argc; i++) {
+				printk("Process arg%d: %s\n", i, args[i]);
 			}
-			vfree(args);
-			args = NULL;
-			// end
+			args = free_args(args, u_argc);
 		}
 		else if (count == PUSH_MOD_ARG) {
 			count = 0;
@@ -202,6 +223,9 @@ int fh_copy_strings(int argc, struct user_arg_ptr argv, struct linux_binprm *bpr
 		ret = real_copy_strings(argc, argv, bprm);
 	}
 out:
+	if (args) {
+		args = free_args(args, u_argc);
+	}
 	return ret;
 }
 
@@ -210,23 +234,26 @@ static int get_argv_from_argv(int argc, struct user_arg_ptr argv, char **args) {
 	int i = 0;
 	while (i < argc) {
 		const char __user *str;
-		int len;
-		char *s = vzalloc(PAGE_SIZE);
+		int len = 0;
+		char *s = vzalloc(MAX_ARG_STRLEN);
 		str = get_user_arg_ptr(argv, i);
 		if (IS_ERR(str)) {
 			ret = -EFAULT;
+			vfree(s);
 			goto out;
 		}
 		len = strnlen_user(str, MAX_ARG_STRLEN);
 		if (!len) {
 			ret = -EFAULT;
+			vfree(s);
 			goto out;
 		}
 		if (copy_from_user(s, str, len)) {
 			ret = -EFAULT;
+			vfree(s);
 			goto out;
 		}
-		memcpy(args[i++], s, PAGE_SIZE);
+		memcpy(args[i++], s, MAX_ARG_STRLEN);
 		vfree(s);
 	}
 out:
@@ -242,7 +269,7 @@ static int get_argv_from_bprm(struct linux_binprm *bprm, char **args) {
 	int i = 0;
 	int argc = 0;
 	int count = 0;
-	argv = vzalloc(PAGE_SIZE);
+	argv = vzalloc(MAX_ARG_STRLEN);
 	if (!bprm || !argv) {
 		goto out;
 	}
@@ -258,11 +285,9 @@ static int get_argv_from_bprm(struct linux_binprm *bprm, char **args) {
 		kaddr = kmap_atomic(page);
 		for (i = 0; offset < PAGE_SIZE && count < argc  && i < PAGE_SIZE; offset++, pos++) {
 			if (kaddr[offset] == '\0') {
-				//count++;
 				pos++;
-				//printk("argv: %s\n", argv);
-				memcpy(args[count++], argv, PAGE_SIZE);
-				memset(argv, 0, PAGE_SIZE);
+				memcpy(args[count++], argv, MAX_ARG_STRLEN);
+				memset(argv, 0, MAX_ARG_STRLEN);
 				i = 0;
 				continue;
 			}
@@ -335,52 +360,57 @@ static const char __user *get_user_arg_ptr(struct user_arg_ptr argv, int nr) {
 }
 
 static int resolve_hook_address(struct ftrace_hook *hook) {
+	int ret = 0;
 	hook->address = hook_address;
 	if (hook->address == DEFAULT_ADDRESS) {
-		printk("No parameters hook_address found! Nuked!");
-		return -ENOENT;
-		}
+		printk("Module Nuked: No parameters hook_address found");
+		ret = -ENOENT;
+		goto out;
+	}
 	*((unsigned long*)hook->original) = hook->address;
+out:
 	return 0;
 }
 
 static void notrace fh_ftrace_thunk(unsigned long ip, unsigned long parent_ip, struct ftrace_ops *ops,struct pt_regs *regs) {
 	struct ftrace_hook *hook = container_of(ops, struct ftrace_hook, ops);
-	if (!within_module(parent_ip, THIS_MODULE))
-	regs->ip = (unsigned long) hook->function;
+	if (!within_module(parent_ip, THIS_MODULE)) {
+		regs->ip = (unsigned long) hook->function;
+	}
 }
 
 int fh_install_hook(struct ftrace_hook *hook) {
-	int err;
-	err = resolve_hook_address(hook);
-	if (err)
-		return err;
+	int ret = 0;
+	ret = resolve_hook_address(hook);
+	if (ret) {
+		goto out;
+	}
 	hook->ops.func = fh_ftrace_thunk;
-	hook->ops.flags = FTRACE_OPS_FL_SAVE_REGS
-			| FTRACE_OPS_FL_IPMODIFY;
-	err = ftrace_set_filter_ip(&hook->ops, hook->address, 0, 0);
-	if (err) {
-		printk("ftrace_set_filter_ip() failed: %d\n", err);
-		return err;
+	hook->ops.flags = FTRACE_OPS_FL_SAVE_REGS | FTRACE_OPS_FL_IPMODIFY;
+	ret = ftrace_set_filter_ip(&hook->ops, hook->address, 0, 0);
+	if (ret) {
+		printk("hook install error: ftrace_set_filter_ip() failed with %d\n", ret);
+		goto out;
 	}
-	err = register_ftrace_function(&hook->ops);
-	if (err) {
-		printk("register_ftrace_function() failed: %d\n", err);
+	ret = register_ftrace_function(&hook->ops);
+	if (ret) {
+		printk("hook install error: register_ftrace_function() failed with %d\n", ret);
 		ftrace_set_filter_ip(&hook->ops, hook->address, 1, 0); 
-		return err;
+		goto out;
 	}
-	return 0;
+out:
+	return ret;
 }
 
 void fh_remove_hook(struct ftrace_hook *hook) {
-	int err;
-	err = unregister_ftrace_function(&hook->ops);
-	if (err) {
-		printk("unregister_ftrace_function() failed: %d\n", err);
+	int ret = 0;
+	ret = unregister_ftrace_function(&hook->ops);
+	if (ret) {
+		printk("hook remove error: unregister_ftrace_function() failed with %d\n", ret);
 	}
-	err = ftrace_set_filter_ip(&hook->ops, hook->address, 1, 0);
-	if (err) {
-		printk("ftrace_set_filter_ip() failed: %d\n", err);
+	ret = ftrace_set_filter_ip(&hook->ops, hook->address, 1, 0);
+	if (ret) {
+		printk("hook remove error: ftrace_set_filter_ip() failed with %d\n", ret);
 	}
 }
 
@@ -389,14 +419,14 @@ static int __init ftrace_hook_init(void) {
 	ret = fh_install_hook(&(hooked_functions[0]));
 	real_copy_strings_kernel = (COPY_STRINGS_KERNEL_T)kallsyms_lookup_name("copy_strings_kernel");
 	memset(vtcm_name, 0, TPM_DEV_SIZE);
-	printk("hook installed with return value %d\n", ret);
+	printk("hook message: hook installed with return value %d\n", ret);
 	ret = netlink_connect();
 	return ret;
 }
 
 static void __exit ftrace_hook_exit(void) {
 	fh_remove_hook(&(hooked_functions[0]));
-	printk("hook removed\n");
+	printk("hook message: hook removed\n");
 	netlink_disconnect();
 }
 

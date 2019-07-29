@@ -30,7 +30,7 @@ int show_vtcm_init(void *sub_proc, void *para) {
 
 	skfd = socket(AF_NETLINK, SOCK_RAW, NETLINK_UNIT);
 	if (skfd < 0) {
-		perror("create netlink socket error!\n");
+		perror("Create netlink socket error: ");
 		return skfd;
 	}
 	memset(&saddr, 0, sizeof(saddr));
@@ -38,7 +38,7 @@ int show_vtcm_init(void *sub_proc, void *para) {
 	saddr.nl_pid = USER_PORT;
 	saddr.nl_groups = 0;
 	if (ret = bind(skfd, (struct sockaddr *)&saddr, sizeof(saddr))) {
-		perror("bind() error\n");
+		perror("Function bind error: ");
 		close(skfd);
 		return ret;
 	}
@@ -79,7 +79,6 @@ int show_vtcm_start(void *sub_proc, void *para) {
 			continue;
 		}
 		if ((type == TYPE(VTCM_MEMDB)) && (subtype == SUBTYPE(VTCM_MEMDB,OUT))) {
-			fflush(stdout);
 			ret = rcv_from_db(recv_msg, vtcm_name);
 			if (ret < 0) {
 				printf("rcv_from_db error\n");
@@ -100,9 +99,10 @@ int send_to_db(void *sub_proc, char *msg) {
 	RECORD(VTCM_MEMDB,IN) *in;
 
 	in = Talloc0(sizeof(*in));
-	if(!in) {
+	if (!in) {
 		printf("Talloc0 error!\n");
-		return -ENOMEM;
+		ret = -ENOMEM;
+		return ret;
 	}
 	in->img_name = dup_str(msg, 0);
 	void *new_msg = message_create(TYPE_PAIR(VTCM_MEMDB,IN), NULL);
@@ -160,9 +160,8 @@ int send_to_kernel(char *vtcm_name, int len) {
 	nlh->nlmsg_pid = saddr.nl_pid;
 	memcpy(NLMSG_DATA(nlh), vtcm_name, len);
 	ret = sendto(skfd, nlh, nlh->nlmsg_len, 0, (struct sockaddr *)&daddr, sizeof(struct sockaddr_nl));
-	printf("send message and return %d\n", ret);
 	if (!ret) {
-		perror("sendto error\n");
+		perror("Error in sending message to kernel: ");
 		close(skfd);
 		return ret;
 	}

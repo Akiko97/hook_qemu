@@ -44,6 +44,8 @@ struct user_arg_ptr {
 #define VM_UUID_SIZE		37
 
 int fh_copy_strings(int, struct user_arg_ptr, struct linux_binprm *);
+char **alloc_args(char **, int);
+char **free_args(char **, int);
 static int netlink_connect(void);
 static void netlink_disconnect(void);
 int send_msg( const char *,uint16_t);
