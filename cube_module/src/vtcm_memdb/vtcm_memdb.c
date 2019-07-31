@@ -20,7 +20,7 @@
 
 #include "vtcmdb_struct.h"
 
-int vtcm_num = 0;
+int vtcm_num = 1;
 
 int vtcm_memdb_init(void *sub_proc, void *para) {
 	int ret = 0;
